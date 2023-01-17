@@ -47,7 +47,6 @@ namespace RealTimeGamingLeaderBoardAPI.Controllers
         [HttpGet]
         [Route("~/GetLeaderBoardPosition")]
         public int GetLeaderBoardPosition(string userId)
-
         {
             if (db != null)
             {
@@ -55,23 +54,40 @@ namespace RealTimeGamingLeaderBoardAPI.Controllers
                 if (position.HasValue)
                     return (int)position.Value;
             }
-
             return -1;
         }
+
         [HttpGet]
         [Route("~/GetLeaderBoardRelativePosition")]
         public IEnumerable<LeaderBoard>? GetLeaderBoardRelativePosition(string userId, int FetchAboveNBelow)
-            
-         {
+        {
+
             if (db == null) return Enumerable.Empty<LeaderBoard>();
-            var rank = db.SortedSetRank("leaderboard", userId);
-            if (rank != null)
+            var rank = db.SortedSetRank("leaderboard", userId, Order.Descending);
+            if (rank.HasValue)
             {
-                var positionList = db.SortedSetRangeByRank("leaderboard", rank.Value - 4, rank.Value + 4, Order.Descending);
+                int rankValue = (int)rank.Value;
+                int start = rankValue > FetchAboveNBelow ? rankValue - FetchAboveNBelow : 0;
+                int stop = rankValue + FetchAboveNBelow;
+                var positionList = db.SortedSetRangeByRank("leaderboard", start, stop, Order.Descending);
                 return positionList.ToList().Select((x, i) => new LeaderBoard { UserId = x.ToString(), Score = (int)db.SortedSetScore("leaderboard", x) });
             }
             return null;
+
         }
-        
+
+
+        [HttpPost]
+        [Route("~/SetLeaderBoardScore")]
+        public bool SetLeaderBoardScore(string userId, int score)
+        {
+            if (db == null) return false;
+            var result = this.db.SortedSetAdd("leaderboard", userId, score);
+            return  result;                        
+
+        }
+
+
+
     }
 }
