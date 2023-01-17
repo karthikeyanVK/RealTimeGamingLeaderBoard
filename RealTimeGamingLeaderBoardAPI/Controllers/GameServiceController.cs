@@ -37,25 +37,28 @@ namespace RealTimeGamingLeaderBoardAPI.Controllers
             //Console.WriteLine("Data added to Redis");
 
         }
-
-        [HttpGet(Name = "GetLeaderBoard")]
+        [HttpGet]
+        [Route("~/GetLeaderBoard/{topCount}")]
         public IEnumerable<LeaderBoard> GetLeaderBoard(int topCount)
         {
             return db.SortedSetRangeByRankWithScores("leaderboard", 0, topCount, Order.Descending).ToList().Select((x, i) => new LeaderBoard { UserId = x.Element.ToString(), Score = (int) x.Score });
         }
-        [HttpGet(Name = "GetLeaderBoardPosition")]
+        [HttpGet]
+        [Route("~/GetLeaderBoardPosition")]
         public int GetLeaderBoardPosition(string userId)
         {
             return (int)db.SortedSetRank("leaderboard", userId).Value; //.ToList().Select((x, i) => new LeaderBoard { UserId = x.Element.ToString(), Score = (int)x.Score });
         }
-        /* [HttpGet(Name = "GetLeaderBoardRelativePosition")]
-         public IEnumerable<LeaderBoard> GetLeaderBoardRelativePosition(string userId, int FetchAboveNBelow)
-
+        [HttpGet]
+        [Route("~/GetLeaderBoardRelativePosition")]
+        public IEnumerable<LeaderBoard> GetLeaderBoardRelativePosition(string userId, int FetchAboveNBelow)
+            
          {
-
-             return db.SortedSetRange ("leaderboard", 0, topCount, Order.Descending).ToList().Select((x, i) => new LeaderBoard { UserId = x.Element.ToString(), Score = (int)x.Score });
-         }
-        */
-
+            int rank = (int)db.SortedSetRank("leaderboard", userId).Value;
+            string temp = db.SortedSetRank("leaderboard", rank).ToString();
+            var positionList = db.SortedSetRangeByRank("leaderboard", rank - 4, rank + 4, Order.Descending);
+            return positionList.ToList().Select((x, i) => new LeaderBoard { UserId = x.ToString(), Score = (int)db.SortedSetScore("leaderboard", x) });
+        }
+        
     }
 }
