@@ -12,6 +12,7 @@ namespace RealTimeGamingLeaderBoardAPI.Controllers
         IDatabase? db = null;
         public GameServiceController()
         {
+            //Move this to configuration file   
             ConnectionMultiplexer redis = ConnectionMultiplexer.Connect(
            new ConfigurationOptions
            {
@@ -20,22 +21,6 @@ namespace RealTimeGamingLeaderBoardAPI.Controllers
            });
 
             this.db = redis.GetDatabase();
-
-            //Random random = new Random();
-
-
-
-            //Parallel.For(1, 1000000, i =>
-            //{
-            //    new ParallelOptions
-            //    {
-            //        MaxDegreeOfParallelism = 3
-            //    };
-            //    int score = random.Next(0, 1000);
-            //    db.SortedSetAdd("leaderboard", "user" + i, score);
-            //});
-            //Console.WriteLine("Data added to Redis");
-
         }
         [HttpGet]
         [Route("~/GetLeaderBoard/{topCount}")]
@@ -70,7 +55,7 @@ namespace RealTimeGamingLeaderBoardAPI.Controllers
                 int start = rankValue > FetchAboveNBelow ? rankValue - FetchAboveNBelow : 0;
                 int stop = rankValue + FetchAboveNBelow;
                 var positionList = db.SortedSetRangeByRank("leaderboard", start, stop, Order.Descending);
-                return positionList.ToList().Select((x, i) => new LeaderBoard { UserId = x.ToString(), Score = (int)db.SortedSetScore("leaderboard", x) });
+                return positionList.ToList().Select((x, i) => new LeaderBoard { UserId = x.ToString(), Score = (db.SortedSetScore("leaderboard", x).HasValue ? (int)db.SortedSetScore("leaderboard", x) : 0) });
             }
             return null;
 
